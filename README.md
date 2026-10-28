@@ -51,7 +51,7 @@ The first run downloads rclone for your platform into `src-tauri/binaries/` (che
 export TAURI_SIGNING_PRIVATE_KEY="$(cat ~/.tauri/clonemount.key)" TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
 ```
 
-CI reads the same key from the `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` repository secrets. Keep a backup of `~/.tauri/clonemount.key`: if it's lost, installed copies can't be updated any more and everyone has to reinstall by hand. Pushing a `v*` tag builds installers for all platforms into a draft GitHub release (see `.github/workflows/release.yml`). Installed apps see the update once you publish the draft.
+CI reads the same key from the `TAURI_SIGNING_PRIVATE_KEY` repository secret. Keep a backup of `~/.tauri/clonemount.key`: if it's lost, installed copies can't be updated any more and everyone has to reinstall by hand. Pushing a `v*` tag builds installers for all platforms into a draft GitHub release (see `.github/workflows/release.yml`). Installed apps see the update once you publish the draft.
 
 ### Layout
 

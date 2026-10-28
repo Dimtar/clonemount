@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>clonemount</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="brand"><img src="icon.png" alt="" /> clonemount</div>
+    <nav>
+      <button class="tab active" data-tab="drives">Drives</button>
+      <button class="tab" data-tab="remotes">Remotes</button>
+      <button class="tab" data-tab="settings">Settings</button>
+    </nav>
+  </header>
+
+  <main>
+    <div id="banners"></div>
+
+    <section id="drives" class="panel active">
+      <div class="panel-head">
+        <h2>Drives</h2>
+        <button class="primary" id="add-drive">Add drive</button>
+      </div>
+      <div id="drive-list" class="list"></div>
+    </section>
+
+    <section id="remotes" class="panel">
+      <div class="panel-head">
+        <h2>Remotes</h2>
+        <button class="primary" id="add-remote">Add remote</button>
+      </div>
+      <div id="remote-list" class="list"></div>
+
+      <details class="card">
+        <summary>Edit rclone.conf directly</summary>
+        <p class="hint">This is clonemount's own copy of rclone.conf. You can also run rclone's setup wizard on it from a terminal:</p>
+        <div class="copy-row"><code id="config-cmd"></code><button id="copy-cmd">Copy</button></div>
+        <textarea id="conf-text" spellcheck="false" rows="14"></textarea>
+        <div class="row-end"><button class="primary" id="save-conf">Save rclone.conf</button></div>
+      </details>
+    </section>
+
+    <section id="settings" class="panel">
+      <h2>Settings</h2>
+      <div class="card">
+        <label class="switch-row">
+          <span><strong>Start at login</strong><small>Mount drives automatically when you log in.</small></span>
+          <input type="checkbox" id="autostart" />
+        </label>
+      </div>
+
+      <div class="card">
+        <strong>rclone</strong>
+        <p class="hint" id="rclone-info"></p>
+        <label>Custom rclone location <small>(leave empty to use the bundled copy)</small>
+          <input id="rclone-path" placeholder="Bundled" />
+        </label>
+        <div class="row-end"><button id="save-rclone">Save</button></div>
+      </div>
+
+      <div class="card">
+        <strong>Move to another computer</strong>
+        <p class="hint">Your drives and rclone.conf are stored together in <code id="data-dir"></code><span id="portable-note"></span>.
+          Export them to one file, then import that file on the other computer.</p>
+        <p class="hint warn">The export holds your remote credentials. Keep it private.</p>
+        <div class="row-start">
+          <button id="export">Export…</button>
+          <button id="import">Import…</button>
+          <button id="open-data">Open data folder</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="drive-dialog">
+    <form method="dialog" id="drive-form">
+      <h3 id="drive-title">Add drive</h3>
+      <label>Name <input name="name" placeholder="e.g. Google Drive" /></label>
+      <div class="two">
+        <label>Remote <select name="remote_name" required></select></label>
+        <label>Folder in remote <input name="remote_path" placeholder="Whole remote" /></label>
+      </div>
+      <label>Mount at <input name="target" id="target-input" placeholder="Automatic" />
+        <small id="target-hint"></small>
+      </label>
+      <label>Cache mode
+        <select name="cache_mode">
+          <option value="full">Full (recommended: works with every app)</option>
+          <option value="writes">Writes</option>
+          <option value="minimal">Minimal</option>
+          <option value="off">Off</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" name="auto_mount" /> Mount when clonemount starts</label>
+      <label class="check"><input type="checkbox" name="read_only" /> Read-only</label>
+      <details>
+        <summary>Advanced</summary>
+        <label>Extra rclone options <input name="extra_args" placeholder="--vfs-cache-max-size 10G --dir-cache-time 5m" /></label>
+      </details>
+      <p class="error" id="drive-error"></p>
+      <div class="dialog-actions">
+        <button type="button" class="danger" id="delete-drive">Delete</button>
+        <span class="spacer"></span>
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button class="primary" value="save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="remote-dialog">
+    <form method="dialog" id="remote-form">
+      <h3>Add remote</h3>
+      <div class="two">
+        <label>Name <input name="name" required placeholder="e.g. gdrive" /></label>
+        <label>Type <select name="kind" id="remote-kind" required></select></label>
+      </div>
+      <div id="remote-options"></div>
+      <label class="check"><input type="checkbox" id="show-advanced" /> Show advanced options</label>
+      <p class="hint" id="oauth-hint">If this service needs you to sign in, your browser opens when you click Create.</p>
+      <p class="error" id="remote-error"></p>
+      <div class="dialog-actions">
+        <span class="spacer"></span>
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button class="primary" value="save" id="create-remote">Create</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast"></div>
+  <script src="main.js"></script>
+</body>
+</html>

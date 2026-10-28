@@ -1,0 +1,33 @@
+[package]
+name = "clonemount"
+version = "0.1.0"
+description = "Mount rclone remotes as drives, automatically"
+edition = "2021"
+
+[lib]
+name = "clonemount_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-autostart = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-single-instance = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+shell-words = "1"
+uuid = { version = "1", features = ["v4"] }
+which = "7"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

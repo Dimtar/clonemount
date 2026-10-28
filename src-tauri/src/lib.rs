@@ -1,6 +1,7 @@
 mod config;
 mod mounts;
 mod rclone;
+mod updates;
 
 use config::{MountConfig, Store};
 use mounts::Manager;
@@ -18,9 +19,10 @@ use tauri_plugin_opener::OpenerExt;
 /// Passed by the autostart entry so a login launch stays in the tray.
 const HIDDEN_ARG: &str = "--hidden";
 
-struct AppState {
+pub(crate) struct AppState {
     store: Arc<Store>,
     mounts: Arc<Manager>,
+    updates: updates::Updates,
 }
 
 type Res<T> = Result<T, String>;
@@ -265,6 +267,21 @@ async fn import_config(app: AppHandle, state: State<'_, AppState>) -> Res<bool> 
 }
 
 #[tauri::command]
+fn update_info(app: AppHandle) -> updates::UpdateInfo {
+    updates::info(&app)
+}
+
+#[tauri::command]
+async fn check_update(app: AppHandle) -> Res<updates::UpdateInfo> {
+    updates::check(&app).await
+}
+
+#[tauri::command]
+async fn install_update(app: AppHandle) -> Res<()> {
+    updates::install(&app).await
+}
+
+#[tauri::command]
 fn get_autostart(app: AppHandle) -> bool {
     app.autolaunch().is_enabled().unwrap_or(false)
 }
@@ -275,7 +292,7 @@ fn set_autostart(app: AppHandle, enabled: bool) -> Res<()> {
     if enabled { launcher.enable() } else { launcher.disable() }.map_err(|e| e.to_string())
 }
 
-fn show_window(app: &AppHandle) {
+pub(crate) fn show_window(app: &AppHandle) {
     if let Some(w) = app.get_webview_window("main") {
         let _ = w.show();
         let _ = w.unminimize();
@@ -287,9 +304,11 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
     let open = MenuItem::with_id(app, "open", "Open clonemount", true, None::<&str>)?;
     let mount_all = MenuItem::with_id(app, "mount_all", "Mount all", true, None::<&str>)?;
     let unmount_all = MenuItem::with_id(app, "unmount_all", "Unmount all", true, None::<&str>)?;
+    let update = MenuItem::with_id(app, "update", "Check for updates", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
     let sep = || PredefinedMenuItem::separator(app);
-    let menu = Menu::with_items(app, &[&open, &sep()?, &mount_all, &unmount_all, &sep()?, &quit])?;
+    *app.state::<AppState>().updates.tray_item.lock().unwrap() = Some(update.clone());
+    let menu = Menu::with_items(app, &[&open, &sep()?, &mount_all, &unmount_all, &sep()?, &update, &quit])?;
 
     TrayIconBuilder::with_id("tray")
         .icon(app.default_window_icon().cloned().expect("app icon"))
@@ -302,6 +321,7 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
                 "open" => show_window(app),
                 "mount_all" => state.mounts.set_all_wanted(true),
                 "unmount_all" => state.mounts.set_all_wanted(false),
+                "update" => updates::tray_clicked(app),
                 "quit" => app.exit(0),
                 _ => {}
             }
@@ -321,6 +341,7 @@ pub fn run() {
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, Some(vec![HIDDEN_ARG])))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             let store = Arc::new(Store::open(app.path().app_config_dir()?));
 
@@ -331,8 +352,9 @@ pub fn run() {
             }
 
             let mounts = Manager::new(store.clone());
-            app.manage(AppState { store, mounts });
+            app.manage(AppState { store, mounts, updates: Default::default() });
             build_tray(app.handle())?;
+            updates::start_background_checks(app.handle().clone());
 
             if !std::env::args().any(|a| a == HIDDEN_ARG) {
                 show_window(app.handle());
@@ -368,6 +390,9 @@ pub fn run() {
             set_rclone_path,
             export_config,
             import_config,
+            update_info,
+            check_update,
+            install_update,
             get_autostart,
             set_autostart,
         ])

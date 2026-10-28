@@ -1,4 +1,5 @@
 const { invoke } = window.__TAURI__.core;
+const { listen } = window.__TAURI__.event;
 const $ = (sel) => document.querySelector(sel);
 const isWindows = navigator.userAgent.includes("Windows");
 
@@ -389,6 +390,55 @@ $("#import").addEventListener("click", async () => {
     refresh();
   }
 });
+
+// ---------- updates ----------
+
+function renderUpdate(info) {
+  const v = info.available;
+  $("#update-status").textContent = v
+    ? `Version ${v} is available. You have ${info.current}.`
+    : `You have the latest version (${info.current}).`;
+  $("#install-update").hidden = !v;
+  $("#install-update").textContent = v ? `Install ${v} and restart` : "";
+  $("#update-banner").innerHTML = v
+    ? `<div class="banner"><span><strong>clonemount ${esc(v)} is available.</strong> Installing restarts the app, so your drives unmount for a moment.</span>
+        <button class="primary" id="banner-install">Install and restart</button></div>`
+    : "";
+  $("#banner-install")?.addEventListener("click", installUpdate);
+}
+
+async function installUpdate() {
+  document.querySelectorAll("#install-update, #banner-install").forEach((b) => {
+    b.disabled = true;
+    b.textContent = "Downloading…";
+  });
+  try {
+    await attempt(() => invoke("install_update"));
+  } catch {
+    renderUpdate(await invoke("update_info"));
+  }
+}
+
+$("#install-update").addEventListener("click", installUpdate);
+$("#check-update").addEventListener("click", async () => {
+  const btn = $("#check-update");
+  btn.disabled = true;
+  try {
+    const info = await attempt(() => invoke("check_update"));
+    renderUpdate(info);
+    if (!info.available) toast("clonemount is up to date");
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+listen("update-available", (e) => renderUpdate(e.payload));
+listen("update-checked", (e) => {
+  renderUpdate(e.payload);
+  if (!e.payload.available) toast("clonemount is up to date");
+});
+listen("update-error", (e) => toast(`Update failed: ${e.payload}`));
+invoke("update_info").then(renderUpdate);
 
 $("#open-data").addEventListener("click", () => attempt(() => invoke("open_data_dir")));
 

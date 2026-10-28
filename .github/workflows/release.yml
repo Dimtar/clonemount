@@ -1,6 +1,7 @@
 name: Release
 
 # Push a tag like v0.1.0 to build installers for every platform into a draft release.
+# Installed apps only see the update once the draft is published.
 on:
   push:
     tags: ["v*"]
@@ -49,6 +50,9 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Signs the update packages. The app only installs updates signed by this key.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: clonemount ${{ github.ref_name }}

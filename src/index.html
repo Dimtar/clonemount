@@ -17,6 +17,7 @@
   </header>
 
   <main>
+    <div id="update-banner"></div>
     <div id="banners"></div>
 
     <section id="drives" class="panel active">
@@ -50,6 +51,15 @@
           <span><strong>Start at login</strong><small>Mount drives automatically when you log in.</small></span>
           <input type="checkbox" id="autostart" />
         </label>
+      </div>
+
+      <div class="card">
+        <strong>Updates</strong>
+        <p class="hint" id="update-status">clonemount checks for updates in the background.</p>
+        <div class="row-start">
+          <button id="check-update">Check now</button>
+          <button class="primary" id="install-update" hidden>Install and restart</button>
+        </div>
       </div>
 
       <div class="card">
